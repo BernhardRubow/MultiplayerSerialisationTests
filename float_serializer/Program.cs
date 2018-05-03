@@ -49,6 +49,16 @@ namespace float_serializer
                 long result = testDurationOf(useBinaryFormatter);
                 Console.WriteLine($"Result in ms: {result}");
             });
+
+            Console.WriteLine("\n---\n");
+
+            Console.WriteLine("Starting Serialize with BinaryFormatter ...");
+            testXtimes(10, () =>
+            {
+                long result = testDurationOf(useBinaryFormatterWithFloatArray);
+                Console.WriteLine($"Result in ms: {result}");
+            });
+
             Console.ReadLine();
         }
 
@@ -86,11 +96,11 @@ namespace float_serializer
         /// </summary>
         /// <param name="v">The vector to serialize</param>
         /// <param name="q">The quarternion to serialize</param>
-        public static void useBufferBlockCopy(int n, Vector3 v, Quarternion q)
+        public static void useBufferBlockCopy(int n, Vector3 v3, Quarternion q4)
         {
             var FLOAT_SIZE = sizeof(float);
 
-            var source = new [] {v.x, v.y, v.z, q.w, q.x, q.y, q.z};
+            var source = new[] { v3.x, v3.y, v3.z, q4.w, q4.x, q4.y, q4.z };
 
             for (int i = 0; i < n; i++)
             {
@@ -161,6 +171,68 @@ namespace float_serializer
                 stream.Close();
             }
         }
+
+        /// <summary>
+        /// Serialize and Deserialize a Vector3 and a Quarternion for n-times by use
+        /// of MemoryStream and BinaryFormatter.
+        /// </summary>
+        /// <param name="v">The vector to serialize</param>
+        /// <param name="q">The quarternion to serialize</param>
+        public static void useBinaryFormatterWithFloatArray(int n, Vector3 v3, Quarternion q4)
+        {
+            for (int i = 0; i < n; i++)
+            {
+                var source = new[] { v3.x, v3.y, v3.z, q4.w, q4.x, q4.y, q4.z };
+
+                // serialize ArrayList
+                MemoryStream stream = new MemoryStream();
+                BinaryFormatter formatter = new BinaryFormatter();
+                try
+                {
+                    formatter.Serialize(stream, source);
+                }
+                catch (SerializationException e)
+                {
+                    Console.WriteLine("Serialization Failed : " + e.Message);
+                }
+                byte[] objectAsBytes = stream.ToArray();
+                stream.Close();
+
+                // deserialize ArrayList
+                stream = new MemoryStream();
+                stream.Write(objectAsBytes, 0, objectAsBytes.Length);
+                stream.Seek(0, SeekOrigin.Begin);
+                formatter = new BinaryFormatter();
+                try
+                {
+                    float[] objectThatWasDeserialized = (float[])formatter.Deserialize(stream);
+
+                    Vector3 deserializedVector = new Vector3()
+                    {
+                        x = objectThatWasDeserialized[0],
+                        y = objectThatWasDeserialized[1],
+                        z = objectThatWasDeserialized[2],
+                    };
+
+                    Quarternion deserializedQuaternion = new Quarternion
+                    {
+                        w = objectThatWasDeserialized[3],
+                        x = objectThatWasDeserialized[4],
+                        y = objectThatWasDeserialized[5],
+                        z = objectThatWasDeserialized[6]
+                    };
+                }
+                catch (SerializationException e)
+                {
+                    Console.WriteLine("Deserialization Failed : " + e.Message);
+                }
+                stream.Close();
+
+
+                
+            }
+        }
+
 
 
         // +++ helper +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
